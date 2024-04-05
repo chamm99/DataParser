@@ -1,2 +1,2 @@
-# CreatingTimeTableTest
-Testing repo for cp
+# DataParser
+For capstone project data managing
