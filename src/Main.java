@@ -4,17 +4,21 @@ public class Main {
     public static void main(String[] args) {
         Service service = new Service();
         //jdbc 커넥션 생성
-        Connection conn = service.createConn("", "", "");
+        Connection conn = service.createConn(
+                "",
+                "",
+                "");
 
-        service.dropTable(conn, "");
-        service.dropTable(conn, "");
+        // 현재 강의 테이블 데이터 삽입
+        service.insertCurrentLecturesTable(conn, "2024subData.txt", "2024-1");
 
-        //에브리타임 이전 강의 테이블 생성 및 데이터 삽입
-        //테이블 명은 파일명에서 ".txt"를 잘라낸 이름으로 자동 생성
-        service.insertEverytimeTable(conn, "");
-
-        //현재 강의 테이블 생성 및 데이터 삽입
-        service.insertCurrentLecturesTable(conn, "", "");
+        //이전 강의 테이블 데이터 삽입
+        for (int year = 2018; year <= 2023; year++) {
+            for (int semester = 1; semester <= 2; semester++) {
+                String fileName = String.format("everytime%d_%d.txt", year, semester);
+                service.insertEverytimeTable(conn, fileName);
+            }
+        }
 
     }
 }
