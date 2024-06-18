@@ -95,7 +95,7 @@ public class Service {
     private void insertToCurrentLecturesTable(Connection connection, JSONObject jsonObject, String semesterYear) throws SQLException {
         // 통합 정보 강의 테이블 insert
         String query = "INSERT INTO current_lectures (lect_name, lect_time, lect_room, cmp_div, credit, is_cyber, " +
-                "grade, semester_year, department, professor, code, notice) " +
+                "grade, semester_year, department, professor, code_section, code, notice) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, jsonObject.getString("SBJ_NM"));
@@ -107,6 +107,9 @@ public class Service {
             // Unique lecture rooms 추출
             String uniqueLectureRooms = extractUniqueLectureRooms(lectTimeRoom);
 
+            // codeSection parsing
+            String code = jsonObject.optString("SBJ_DIVCLS", null).split("-")[0];
+
             preparedStatement.setString(2, parsedLectTimeRoom.orElse(null)); // 파싱된 값 사용 (없으면 null)
             preparedStatement.setString(3, uniqueLectureRooms); // 중복 없는 강의실 정보 사용
             preparedStatement.setString(4, jsonObject.optString("CMP_DIV_NM", null));
@@ -117,7 +120,8 @@ public class Service {
             preparedStatement.setString(9, jsonObject.optString("EST_DEPT_INFO", null));
             preparedStatement.setString(10, jsonObject.optString("STAFF_NM", null));
             preparedStatement.setString(11, jsonObject.optString("SBJ_DIVCLS", null));
-            preparedStatement.setString(12, jsonObject.optString("TLSN_RMK", null));
+            preparedStatement.setString(12, code);
+            preparedStatement.setString(13, jsonObject.optString("TLSN_RMK", null));
             preparedStatement.executeUpdate();
         }
     }
