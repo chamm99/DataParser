@@ -112,7 +112,7 @@ public class Service {
             preparedStatement.setString(4, jsonObject.optString("CMP_DIV_NM", null));
             preparedStatement.setInt(5, jsonObject.optInt("CDT", 0));
             preparedStatement.setString(6, jsonObject.optString("CYBER_YN", null));
-            preparedStatement.setString(7, jsonObject.optString("EST_DEPT_INFO", null));
+            preparedStatement.setInt(7, jsonObject.optInt("CRS_SHYR", 0));
             preparedStatement.setString(8, semesterYear);
             preparedStatement.setString(9, jsonObject.optString("SBJ_DIVCLS", null));
             preparedStatement.setString(10, jsonObject.optString("TLSN_RMK", null));
