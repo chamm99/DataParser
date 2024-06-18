@@ -5,9 +5,9 @@ public class Main {
         Service service = new Service();
         //jdbc 커넥션 생성
         Connection conn = service.createConn(
-                "jdbc:mysql://localhost:3306/jdbc?serverTimezone=Asia/Seoul",
-                "root",
-                "4423125");
+                "",
+                "",
+                "");
 
         // 현재 강의 테이블 데이터 삽입
         service.insertCurrentLecturesTable(conn, "2024subData.txt", "2024-1");
