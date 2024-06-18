@@ -8,8 +8,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Service {
     private Connection conn = null;
@@ -92,14 +93,22 @@ public class Service {
 
     // 현학기 강의 목록 삽입
     private void insertToCurrentLecturesTable(Connection connection, JSONObject jsonObject, String semesterYear) throws SQLException {
-        //통합 정보 강의 테이블 insert
+        // 통합 정보 강의 테이블 insert
         String query = "INSERT INTO current_lectures (lect_name, lect_time, lect_room, cmp_div, credit, is_cyber, " +
                 "grade, semester_year, code, notice) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, jsonObject.getString("SBJ_NM"));
-            preparedStatement.setString(2, jsonObject.optString("LECT_TIME_ROOM", null));
-            preparedStatement.setString(3, jsonObject.optString("LECT_TIME_ROOM", null));
+
+            // LECT_TIME_ROOM 값을 파싱
+            String lectTimeRoom = jsonObject.optString("LECT_TIME_ROOM", null);
+            Optional<String> parsedLectTimeRoom = parseSchedule(lectTimeRoom);
+
+            // Unique lecture rooms 추출
+            String uniqueLectureRooms = extractUniqueLectureRooms(lectTimeRoom);
+
+            preparedStatement.setString(2, parsedLectTimeRoom.orElse(null)); // 파싱된 값 사용 (없으면 null)
+            preparedStatement.setString(3, uniqueLectureRooms); // 중복 없는 강의실 정보 사용
             preparedStatement.setString(4, jsonObject.optString("CMP_DIV_NM", null));
             preparedStatement.setInt(5, jsonObject.optInt("CDT", 0));
             preparedStatement.setString(6, jsonObject.optString("CYBER_YN", null));
@@ -110,6 +119,7 @@ public class Service {
             preparedStatement.executeUpdate();
         }
     }
+
     private void insertToEverytimeTable(Connection connection, JSONObject jsonObject, String semesterYear) throws SQLException {
         String query = "INSERT INTO previous_lectures (lect_rename, cmp_div, is_cyber, credit, subject_type, semester_year, lect_id, notice, professor) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -127,105 +137,54 @@ public class Service {
         }
     }
 
-
-    private void createCurrentLecturesTable(String tableName, Connection conn) {
-        //통합 정보 포털 강의 데이터 테이블 create
-        try {
-            String query = "CREATE TABLE IF NOT EXISTS " + tableName + " ( " +
-                    "SBJ_NO VARCHAR(50), " +
-                    "SBJ_NM VARCHAR(255), " +
-                    "LECT_TIME_ROOM VARCHAR(255), " +
-                    "CMP_DIV_RCD VARCHAR(50), " +
-                    "THEO_TIME INT, " +
-                    "ATTC_FILE_NO VARCHAR(50), " +
-                    "DIVCLS INT, " +
-                    "TLSN_RMK VARCHAR(255), " +
-                    "CDT INT, " +
-                    "SES_RCD VARCHAR(50), " +
-                    "CMP_DIV_NM VARCHAR(255), " +
-                    "CYBER_YN VARCHAR(1), " +
-                    "CYBER_B_YN VARCHAR(1), " +
-                    "SCH_YEAR VARCHAR(4), " +
-                    "PRAC_TIME INT, " +
-                    "CYBER_S_YN VARCHAR(1), " +
-                    "FILE_PBY_YN VARCHAR(1), " +
-                    "KIND_RCD VARCHAR(50), " +
-                    "SBJ_DIVCLS VARCHAR(50) PRIMARY KEY, " +
-                    "STAFF_NM VARCHAR(255), " +
-                    "DEPT_CD VARCHAR(50), " +
-                    "RMK VARCHAR(255), " +
-                    "CYBER_E_YN VARCHAR(1), " +
-                    "REP_STAFF_NO VARCHAR(50), " +
-                    "EST_DEPT_INFO VARCHAR(255), " +
-                    "SMT_RCD VARCHAR(50), " +
-                    "CRS_SHYR INT, " +
-                    "KIND_NM VARCHAR(255), " +
-                    "BEF_CTNT_02 VARCHAR(255), " +
-                    "BEF_CTNT_01 VARCHAR(255) " +
-                    ")";
-
-            try (PreparedStatement preparedStatement = conn.prepareStatement(query)) {
-                preparedStatement.executeUpdate();
-                System.out.println("Table<" + tableName + "> created successfully.");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void createEverytimeLecturesTable(String tableName, Connection conn) {
-        // 에브리타임 이전 강의 데이터 테이블 create
-        try {
-            String query = "CREATE TABLE IF NOT EXISTS " + tableName + " ( " +
-                    "code VARCHAR(20) PRIMARY KEY, " +
-                    "type VARCHAR(20), " +
-                    "target VARCHAR(100), " +
-                    "lectureId INT, " +
-                    "professor VARCHAR(100), " +
-                    "grade VARCHAR(20), " +
-                    "name VARCHAR(100), " +
-                    "time VARCHAR(100), " +
-                    "place VARCHAR(100), " +
-                    "credit INT, " +
-                    "popular INT, " +
-                    "notice TEXT, " +
-                    "timeplace JSON, " +
-                    "lectureRate INT, " +
-                    "misc1 VARCHAR(100), " +
-                    "misc2 VARCHAR(100), " +
-                    "misc3 VARCHAR(100), " +
-                    "misc4 VARCHAR(100) " +
-                    ")";
-
-            try (PreparedStatement preparedStatement = conn.prepareStatement(query)) {
-                preparedStatement.executeUpdate();
-                System.out.println("Table<" + tableName + "> created successfully.");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-    public void dropTable(Connection conn, String tableName) {
-            //table 존재할 시 삭제
-            String query = "DROP TABLE IF EXISTS " + tableName;
-
-            try (PreparedStatement preparedStatement = conn.prepareStatement(query)) {
-                preparedStatement.executeUpdate();
-                System.out.println(tableName + " dropped successfully.");
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-
-    }
-
     public String extractSemesterYear(String fileName) {
-        // 파일명에서 확장자 제거
         String baseName = fileName.substring(0, fileName.lastIndexOf('.'));
 
-        // baseName에서 숫자와 언더바 추출
         String semesterYear = baseName.replaceAll("[^0-9_]", "");
 
         return semesterYear;
     }
 
+    public Optional<String> parseSchedule(String input) {
+        if (input == null) {
+            return Optional.empty();
+        }
+
+        List<String> result = new ArrayList<>();
+
+        String pattern = "(월|화|수|목|금|토|일)(\\d+(?:,\\d+)*)\\s*\\([A-Z]\\d+\\)";
+
+        Pattern r = Pattern.compile(pattern);
+        Matcher m = r.matcher(input);
+
+        while (m.find()) {
+            String day = m.group(1);
+            String times = m.group(2);
+
+            String[] timeArray = times.split(",");
+            for (String time : timeArray) {
+                result.add(day + time);
+            }
+        }
+
+        String parsedResult = String.join(" ", result);
+        return parsedResult.isEmpty() ? Optional.empty() : Optional.of(parsedResult);
+    }
+
+    public String extractUniqueLectureRooms(String lectTimeRoom) {
+        if (lectTimeRoom == null || lectTimeRoom.isEmpty()) {
+            return "";
+        }
+
+        Pattern pattern = Pattern.compile("\\((.*?)\\)");
+        Matcher matcher = pattern.matcher(lectTimeRoom);
+
+        Set<String> uniqueRooms = new HashSet<>();
+
+        while (matcher.find()) {
+            uniqueRooms.add(matcher.group(1));
+        }
+
+        return String.join(", ", uniqueRooms);
+    }
 }
