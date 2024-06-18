@@ -115,8 +115,8 @@ public class Service {
             preparedStatement.setInt(7, jsonObject.optInt("CRS_SHYR", 0));
             preparedStatement.setString(8, semesterYear);
             preparedStatement.setString(9, jsonObject.optString("EST_DEPT_INFO", null));
-            preparedStatement.setString(9, jsonObject.optString("SBJ_DIVCLS", null));
-            preparedStatement.setString(10, jsonObject.optString("TLSN_RMK", null));
+            preparedStatement.setString(10, jsonObject.optString("SBJ_DIVCLS", null));
+            preparedStatement.setString(11, jsonObject.optString("TLSN_RMK", null));
             preparedStatement.executeUpdate();
         }
     }
