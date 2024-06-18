@@ -94,9 +94,9 @@ public class Service {
     // 현학기 강의 목록 삽입
     private void insertToCurrentLecturesTable(Connection connection, JSONObject jsonObject, String semesterYear) throws SQLException {
         // 통합 정보 강의 테이블 insert
-        String query = "INSERT INTO current_lectures (lect_name, lect_time, lect_room, cmp_div, credit, is_cyber, " +
+        String query = "INSERT INTO current_lecture (lect_name, lect_time, lect_room, cmp_div, credit, is_cyber, " +
                 "grade, semester_year, department, professor, code_section, code, notice) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, jsonObject.getString("SBJ_NM"));
 
@@ -127,7 +127,7 @@ public class Service {
     }
 
     private void insertToEverytimeTable(Connection connection, JSONObject jsonObject, String semesterYear) throws SQLException {
-        String query = "INSERT INTO previous_lectures (lect_rename, cmp_div, is_cyber, credit, subject_type, semester_year, lect_id, notice, professor) " +
+        String query = "INSERT INTO previous_lecture (lect_name, cmp_div, is_cyber, credit, subject_type, semester_year, code, notice, professor) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, jsonObject.optString("name", null));
