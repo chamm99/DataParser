@@ -95,7 +95,7 @@ public class Service {
     private void insertToCurrentLecturesTable(Connection connection, JSONObject jsonObject, String semesterYear) throws SQLException {
         // 통합 정보 강의 테이블 insert
         String query = "INSERT INTO current_lectures (lect_name, lect_time, lect_room, cmp_div, credit, is_cyber, " +
-                "grade, semester_year, department, code, notice) " +
+                "grade, semester_year, department, professor, code, notice) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, jsonObject.getString("SBJ_NM"));
