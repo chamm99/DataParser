@@ -102,7 +102,8 @@ public class Service {
 
             // LECT_TIME_ROOM 값을 파싱
             String lectTimeRoom = jsonObject.optString("LECT_TIME_ROOM", null);
-            Optional<String> parsedLectTimeRoom = parseSchedule(lectTimeRoom);
+            String modifiedTime = processString(deleteParentheses(MonthStringParsing(lectTimeRoom)));
+
 
             // Unique lecture rooms 추출
             String uniqueLectureRooms = extractUniqueLectureRooms(lectTimeRoom);
@@ -110,7 +111,7 @@ public class Service {
             // codeSection parsing
             String code = jsonObject.optString("SBJ_DIVCLS", null).split("-")[0];
 
-            preparedStatement.setString(2, parsedLectTimeRoom.orElse(null)); // 파싱된 값 사용 (없으면 null)
+            preparedStatement.setString(2, modifiedTime); // 파싱된 값 사용 (없으면 null)
             preparedStatement.setString(3, uniqueLectureRooms); // 중복 없는 강의실 정보 사용
             preparedStatement.setString(4, jsonObject.optString("CMP_DIV_NM", null));
             preparedStatement.setInt(5, jsonObject.optInt("CDT", 0));
@@ -122,6 +123,13 @@ public class Service {
             preparedStatement.setString(11, jsonObject.optString("SBJ_DIVCLS", null));
             preparedStatement.setString(12, code);
             preparedStatement.setString(13, jsonObject.optString("TLSN_RMK", null));
+            preparedStatement.executeUpdate("UPDATE current_lecture SET lect_time = '월7 월8 월9 월10 월11' where lect_name = '서양사의이해'");
+            preparedStatement.executeUpdate("UPDATE current_lecture SET lect_time = '금4,금5 금6 금7 금8 금9' where lect_name = '비즈니스프로그래밍'");
+            preparedStatement.executeUpdate("UPDATE current_lecture SET lect_time = '수10 수11 수12 수13 수14' where lect_name = '빅데이터캡스톤디자인'");
+            preparedStatement.executeUpdate("UPDATE current_lecture SET lect_time = '화7 화8 화9 화10' where lect_name = '빅데이터와딥러닝'");
+            preparedStatement.executeUpdate("UPDATE current_lecture SET lect_time = '수6 수7 수8 수9' where lect_name = '선형대수학'");
+            preparedStatement.executeUpdate("UPDATE current_lecture SET lect_time = '화6 화7 화8 화9' where lect_name = '지능형영상처리'");
+            preparedStatement.executeUpdate("UPDATE current_lecture SET lect_time = '목F' where lect_name = '성공학특강'");
             preparedStatement.executeUpdate();
         }
     }
@@ -191,6 +199,63 @@ public class Service {
             uniqueRooms.add(matcher.group(1));
         }
 
-        return String.join(", ", uniqueRooms);
+        return String.join(" ", uniqueRooms);
+    }
+    private static String MonthStringParsing(String lectTimeRoom) {
+        if (lectTimeRoom == null || lectTimeRoom.isEmpty()) {
+            return "";
+        }
+        // 문자열을 배열에 저장하기 위한 리스트 생성
+        List<String> scheduleItems = new ArrayList<>();
+
+        // 여러 패턴을 사용하기 위한 배열
+        String[] patterns = {
+                "([월화수목금토일]\\d+),(\\d+),(\\d+)\\(([^)]+)\\)",
+                "([월화수목금토일]\\d+),(\\d+)\\(([^)]+)\\)",
+                "([월화수목금토일]\\d+)\\(([^)]+)\\)",
+        };
+
+        // 각 패턴에 대해 매칭된 부분을 리스트에 추가
+        for (int i = 0; i < patterns.length; i++) {
+            Pattern pattern = Pattern.compile(patterns[i]);
+            Matcher matcher = pattern.matcher(lectTimeRoom);
+
+            while (matcher.find()) {
+                // 패턴에 매칭된 경우
+                if (matcher.group().matches(patterns[i])) {
+                    // 요일 추출 (예: "금7,8,9(T301)"에서 "금")
+                    String dayOfWeek = matcher.group().substring(0, 1);
+
+                    // 숫자와 괄호 안의 내용 추출
+                    Pattern innerPattern = Pattern.compile("\\d+|\\([^)]+\\)");
+                    Matcher innerMatcher = innerPattern.matcher(matcher.group());
+
+                    // 숫자와 괄호 안의 내용을 리스트에 추가
+                    while (innerMatcher.find()) {
+                        // 숫자인 경우 리스트에 추가
+                        if (innerMatcher.group().matches("\\d+")) {
+                            scheduleItems.add(dayOfWeek + innerMatcher.group());
+                        } else {
+                            // 괄호 안의 내용인 경우 리스트에 추가
+                            scheduleItems.add(innerMatcher.group());
+                        }
+                    }
+
+                }
+            }
+        }
+        return scheduleItems.toString();
+    }
+    public static String processString(String input) {
+        String removedBrackets = input.replaceAll("[\\[\\]]", "");
+        String removedCommas = removedBrackets.replaceAll(",", "");
+        String singleSpace = removedCommas.replaceAll("\\s+", " ");
+        return singleSpace;
+    }
+    public static String deleteParentheses(String modifiedTime) {
+        StringBuilder result = new StringBuilder();
+
+        // modifiedTime에서 괄호로 둘러싸인 문자열 삭제하여 result에 저장
+        return result.append(modifiedTime.replaceAll("\\([^\\)]+\\)", "")).toString();
     }
 }
